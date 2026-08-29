@@ -63,12 +63,20 @@ export default function ProductsPage() {
         <div className="product-grid">
           {products.map((p) => (
             <article className="product" key={p.id}>
-              <button
+              <div
                 className="product-image as-button"
-                style={{ backgroundImage: `url(${p.image})` }}
+                style={{ height: 190, position: 'relative' }}
                 aria-label={`View ${p.name}`}
                 onClick={() => openModal(p)}
-              />
+              >
+                <Image
+                  src={p.image}
+                  alt={p.name}
+                  fill
+                  objectFit="cover"
+                  objectPosition="center"
+                />
+              </div>
               <div className="product-body">
                 <p className="pill subtle">{p.category}</p>
                 <h3>{p.name}</h3>
@@ -138,14 +146,35 @@ export default function ProductsPage() {
             <button className="modal-close" onClick={closeModal} aria-label="Close">×</button>
             <button className="modal-close-top" onClick={closeModal} aria-label="Close">×</button>
             <div className="modal-body">
-              <div className={`modal-image ${zoom ? 'zoomed' : ''}`} onClick={() => setZoom(!zoom)}>
-                <img src={selected.image} alt={selected.name} />
-                <div className="zoom-hint">Click to {zoom ? 'reset' : 'zoom'}</div>
+              <div className="modal-image-container">
+                <div className="modal-main-image">
+                  <img 
+                    src={selected.images?.[currentImageIndex] || selected.image} 
+                    alt={`${selected.name} - view ${currentImageIndex + 1}`} 
+                    onClick={() => setZoom(!zoom)}
+                  />
+                  {zoom && <div className="zoom-overlay" />}
+                </div>
+                {selected.images && selected.images.length > 1 && (
+                  <div className="modal-thumbnails">
+                    {selected.images.map((img, index) => (
+                      <button
+                        key={index}
+                        className={`thumb ${currentImageIndex === index ? 'active' : ''}`}
+                        onClick={() => setCurrentImageIndex(index)}
+                      >
+                        <img src={img} alt={`${selected.name} thumbnail ${index + 1}`} />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="modal-info">
                 <p className="pill subtle">{selected.category}</p>
                 <h3>{selected.name}</h3>
+                {!selected.inStock && <span className="badge out-of-stock">Out of Stock</span>}
                 <p className="muted">Article {selected.article} · {selected.fabric}</p>
+                {selected.description && <p className="description">{selected.description}</p>}
                 <div className="chip-row">
                   <div>
                     <p className="muted" style={{ marginBottom: '0.35rem' }}>Color</p>
@@ -183,11 +212,12 @@ export default function ProductsPage() {
                   <div className="cta-row">
                     <a className="btn solid" href={makeWhatsAppUrl(waText(selected, color, size))} target="_blank" rel="noreferrer">WhatsApp</a>
                     <button
-                      className="btn outline"
+                      className={`btn outline ${!selected.inStock ? 'disabled' : ''}`}
                       type="button"
-                      onClick={() => addToCart(selected)}
+                      onClick={!selected.inStock ? undefined : () => addToCart(selected)}
+                      disabled={!selected.inStock}
                     >
-                      Add to cart
+                      {!selected.inStock ? 'Out of Stock' : 'Add to cart'}
                     </button>
                   </div>
                 </div>

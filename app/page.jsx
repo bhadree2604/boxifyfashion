@@ -70,10 +70,10 @@ export default function Page() {
       <main>
         <section className="hero" id="hero" data-reveal>
           <div className="hero-overlay" />
-          <video className="hero-video" autoPlay muted loop playsInline>
-            <source src="https://videos.pexels.com/video-files/5741335/5741335-uhd_2560_1440_24fps.mp4" type="video/mp4" />
-            <source src="/images/boxy3.mp4" type="video/mp4" />
-          </video>
+          <video className="hero-video" loading="lazy" muted loop playsInline>
+  <source src="https://videos.pexels.com/video-files/5741335/5741335-uhd_2560_1440_24fps.mp4" type="video/mp4" />
+  <source src="/images/boxy3.mp4" type="video/mp4" />
+</video>
           <div className="hero-content">
             <p className="eyebrow">Factory-first · MOQ 10</p>
             <h1>Boxify — Quality & Casuals Manufacturer</h1>

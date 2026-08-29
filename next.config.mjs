@@ -5,8 +5,8 @@ const nextConfig = {
     unoptimized: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
-  };
+    ignoreDuringBuilds: false
+  },
 };
 
 export default nextConfig;

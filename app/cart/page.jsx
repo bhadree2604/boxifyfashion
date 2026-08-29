@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useCart } from '../cart-provider';
 import { useProfile } from '../profile-provider';
+import Image from 'next/image';
 
 const whatsappNumber = '9817197390';
 const email = 'info@boxifyfashion.com';
@@ -64,7 +65,15 @@ export default function CartPage() {
           <div className="cart-list">
             {cart.map((item, idx) => (
               <div className="cart-row" key={`${item.id}-${item.color}-${item.size}-${idx}`}>
-                <div className="cart-thumb" style={{ backgroundImage: `url(${item.image})` }} aria-label={item.name} />
+                <div className="cart-thumb" style={{ width: 120, height: 90, position: 'relative' }} aria-label={item.name}>
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    fill
+                    objectFit="cover"
+                    objectPosition="center"
+                  />
+                </div>
                 <div className="cart-info">
                   <p className="pill subtle">{item.category}</p>
                   <h4>{item.name}</h4>
