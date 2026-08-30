@@ -6,9 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "node scripts/seed-products.mjs"
   },
   "dependencies": {
+    "browser-image-compression": "^2.0.2",
+    "cloudinary": "^2.11.0",
+    "dotenv": "^17.4.2",
+    "firebase": "^12.18.0",
     "lucide-react": "^0.577.0",
     "next": "14.2.13",
     "react": "18.3.1",

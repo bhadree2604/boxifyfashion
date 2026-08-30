@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 
 export default function FeaturedCarousel({ items = [], whatsappNumber, email }) {
   const [index, setIndex] = useState(0);
@@ -21,7 +22,15 @@ export default function FeaturedCarousel({ items = [], whatsappNumber, email }) 
   return (
     <div className="f-carousel">
       <div className="f-card">
-        <div className="product-image" style={{ backgroundImage: `url(${current.image})` }} aria-label={current.name} />
+        <div className="f-card-image" aria-label={current.name}>
+          <Image
+            src={current.image}
+            alt={current.name}
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            style={{ objectFit: 'cover', objectPosition: 'center' }}
+          />
+        </div>
         <div className="product-body compact">
           <p className="pill subtle">{current.category}</p>
           <h3>{current.name}</h3>

@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 const values = [
   {
     title: 'Quality Assurance',
@@ -24,19 +26,6 @@ const timeline = [
   { year: '2024', text: 'Serving global B2B buyers with custom branding and rapid lead times.' },
 ];
 
-const gallery = [
-  { type: 'video', src: '/videos/video1.mov', alt: 'Factory video 1' },
-  { type: 'image', src: '/images/about1.jpg', alt: 'Stitching closeup' },
-  { type: 'image', src: '/images/about2.jpg', alt: 'Machine detail' },
-  { type: 'image', src: '/images/about3.jpg', alt: 'Cutting floor' },
-  { type: 'video', src: '/videos/video2.mov', alt: 'Factory video 2' },
-  { type: 'image', src: '/images/about1.jpg', alt: 'Stitching repeat' },
-  { type: 'video', src: '/videos/video3.mov', alt: 'Factory video 3' },
-  { type: 'image', src: '/images/about2.jpg', alt: 'Machine repeat' },
-  { type: 'image', src: '/images/about3.jpg', alt: 'Cutting repeat' },
-  { type: 'video', src: '/videos/video1.mov', alt: 'Factory video 1 repeat' },
-];
-
 const ownerHistory = [
   { year: '2015', title: 'Apprentice tailor', desc: 'Learned cutting and stitching on the factory floor.' },
   { year: '2018', title: 'Founded Boxify Fashion', desc: 'Set up own cutting + stitching lines with QA steps.' },
@@ -44,20 +33,35 @@ const ownerHistory = [
   { year: '2024', title: 'B2B expansion', desc: 'Serving global resellers with faster lead times and labeling.' },
 ];
 
+// Gallery uses only available images (videos removed — .mov files not present)
+const galleryImages = [
+  { src: '/images/about1.jpg', alt: 'Stitching closeup' },
+  { src: '/images/about2.jpg', alt: 'Machine detail' },
+  { src: '/images/about3.jpg', alt: 'Cutting floor' },
+  { src: '/images/art-201.jpeg', alt: 'Product sample' },
+  { src: '/images/art-202.jpeg', alt: 'Fabric detail' },
+  { src: '/images/art-203.jpeg', alt: 'Finished product' },
+];
+
+export const metadata = {
+  title: 'About Us | Boxify Fashion',
+  description: 'Learn about Boxify Fashion — B2B wholesale manufacturer with factory-owned production since 2018. Meet founder Naveen Saroya.',
+};
+
 export default function AboutPage() {
   return (
-    <main style={{ padding: '1.5rem', display: 'grid', gap: '1.25rem' }}>
+    <div className="page-main">
       <section className="grid">
-        <h1>About Boxify Fashion</h1>
-        <p>
-          Boxify Fashion is a B2B-first manufacturer with its own tailoring floor—cutting, stitching, branding, and
-          finishing under one roof for consistent wholesale quality. We ship bulk tracksuits, lowers, tees, polos,
-          hoodies, and uniforms for retailers and resellers worldwide.
-        </p>
+        <div className="section-header">
+          <h1>About Boxify Fashion</h1>
+          <p>
+            B2B-first manufacturer with its own tailoring floor — cutting, stitching, branding, and finishing under one roof for consistent wholesale quality. We ship bulk tracksuits, lowers, tees, polos, hoodies, and uniforms for retailers and resellers worldwide.
+          </p>
+        </div>
       </section>
 
       <section className="split">
-        <div className="text">
+        <div className="about-text">
           <h2>Why us</h2>
           <div className="value-grid">
             {values.map((v) => (
@@ -72,16 +76,24 @@ export default function AboutPage() {
               <div className="timeline-row" key={t.year}>
                 <div className="year">{t.year}</div>
                 <div className="line" />
-                <div className="text">{t.text}</div>
+                <div className="tl-text">{t.text}</div>
               </div>
             ))}
           </div>
           <div className="owner-detail">
-            <div className="owner-photo" style={{ backgroundImage: "url('/images/owner.jpg')" }} />
+            <div className="owner-photo-wrap">
+              <Image
+                src="/images/owner.jpg"
+                alt="Naveen Saroya — Founder, Boxify Fashion"
+                fill
+                sizes="(max-width: 768px) 100vw, 240px"
+                style={{ objectFit: 'contain', objectPosition: 'center' }}
+              />
+            </div>
             <div>
               <p className="pill subtle">Founder</p>
               <h3>Naveen Saroya</h3>
-              <p className="muted">Founder, Boxify Fashion. Leads production and delivery—fabric selection, cutting accuracy, QC, and on-time dispatch for every lot.</p>
+              <p className="muted">Founder, Boxify Fashion. Leads production and delivery — fabric selection, cutting accuracy, QC, and on-time dispatch for every lot.</p>
               <div className="owner-meta">
                 <span className="pill subtle">10+ yrs in manufacturing</span>
                 <span className="pill subtle">30+ team</span>
@@ -91,7 +103,7 @@ export default function AboutPage() {
                 {ownerHistory.map((item) => (
                   <div className="owner-history-row" key={item.year}>
                     <div className="year">{item.year}</div>
-                    <div className="text"><strong>{item.title}</strong> — {item.desc}</div>
+                    <div className="tl-text"><strong>{item.title}</strong> — {item.desc}</div>
                   </div>
                 ))}
               </div>
@@ -103,25 +115,24 @@ export default function AboutPage() {
       <section className="grid">
         <div className="section-header">
           <h2>Gallery</h2>
-          <p>On-floor shots and production clips.</p>
+          <p>On-floor shots and production samples.</p>
         </div>
         <div className="gallery-grid">
-          {gallery.map((item, idx) => (
+          {galleryImages.map((item, idx) => (
             <div className="gallery-card" key={idx}>
-              {item.type === 'image' ? (
-                <div className="about-photo" style={{ backgroundImage: `url(${item.src})` }} aria-label={item.alt} />
-              ) : (
-                <div className="video-card">
-                  <video controls muted playsInline preload="metadata" poster={gallery.find((g) => g.type === 'image')?.src || ''}>
-                    <source src={item.src} type="video/quicktime" />
-                    Your browser may not support this video.
-                  </video>
-                </div>
-              )}
+              <div className="gallery-img-wrap">
+                <Image
+                  src={item.src}
+                  alt={item.alt}
+                  fill
+                  sizes="(max-width: 480px) 50vw, (max-width: 768px) 33vw, 16vw"
+                  style={{ objectFit: 'cover', objectPosition: 'center' }}
+                />
+              </div>
             </div>
           ))}
         </div>
       </section>
-    </main>
+    </div>
   );
 }

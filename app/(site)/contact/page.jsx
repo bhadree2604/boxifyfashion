@@ -21,30 +21,43 @@ const socialIcons = {
   ),
 };
 
+export const metadata = {
+  title: 'Contact Us | Boxify Fashion',
+  description: 'Get in touch with Boxify Fashion for wholesale orders. Fast quotes on WhatsApp. MOQ 10 units. Custom branding and bulk pricing available.',
+};
+
 export default function ContactPage() {
   return (
-    <main style={{ padding: '1.5rem', display: 'grid', gap: '1.25rem' }}>
+    <div className="page-main">
       <section className="grid">
-        <h1>Contact</h1>
-        <p>Share your article, colors, sizes, and quantity (MOQ 10). Fast quotes on WhatsApp or email.</p>
+        <div className="section-header">
+          <h1>Contact</h1>
+          <p>Share your article, colors, sizes, and quantity (MOQ 10). Fast quotes on WhatsApp or email.</p>
+        </div>
       </section>
 
       <section className="grid">
-        <div className="cta-wide" style={{ color: 'white' }}>
+        <div className="cta-wide">
           <div>
-            <p className="eyebrow">Let’s start your next run</p>
+            <p className="eyebrow">Let&#39;s start your next run</p>
             <h2>Custom orders · bulk pricing · fast delivery</h2>
             <p className="muted">Track pants, t-shirts, joggers, jackets, custom teamwear with labeling/packing on request.</p>
           </div>
           <div className="cta-row">
-            <a className="btn solid" href={makeWhatsAppUrl('Hi, I want to place a wholesale order with Boxify Fashion. Please connect.')} target="_blank" rel="noreferrer">
+            <a
+              id="contact-wa-btn"
+              className="btn solid"
+              href={makeWhatsAppUrl('Hi, I want to place a wholesale order with Boxify Fashion. Please connect.')}
+              target="_blank"
+              rel="noreferrer"
+            >
               WhatsApp +91 {whatsappNumber}
             </a>
             <a className="btn ghost" href={`mailto:${email}`}>Email {email}</a>
           </div>
           <div className="contact-meta">
             <span>MOQ 10 · Volume discounts</span>
-            <span>Custom branding & packing</span>
+            <span>Custom branding &amp; packing</span>
             <span>Factory-owned production</span>
           </div>
         </div>
@@ -52,27 +65,27 @@ export default function ContactPage() {
 
       <section className="grid">
         <div className="section-header">
-          <h3>Talk to our team</h3>
+          <h2>Talk to our team</h2>
           <p>Fast replies on WhatsApp; detailed quotes over email.</p>
         </div>
         <div className="contact-grid">
           <div className="info-card">
             <span className="pill subtle">Fastest</span>
-            <h4>WhatsApp</h4>
+            <h3>WhatsApp</h3>
             <p className="muted">Under 30 mins during working hours.</p>
             <a className="btn solid small" href={makeWhatsAppUrl('Hi, I need wholesale pricing and lead times.')} target="_blank" rel="noreferrer">Chat now</a>
           </div>
           <div className="info-card">
-            <span className="pill subtle">Quotes & PO</span>
-            <h4>Email</h4>
+            <span className="pill subtle">Quotes &amp; PO</span>
+            <h3>Email</h3>
             <p className="muted">Attachments, specs, branding files.</p>
             <a className="btn ghost small" href={`mailto:${email}`}>Email {email}</a>
           </div>
           <div className="info-card">
             <span className="pill subtle">Business hours</span>
-            <h4>Mon–Sat</h4>
+            <h3>Mon–Sat</h3>
             <p className="muted">9:30 AM – 7:00 PM IST · MOQ 10+</p>
-            <div className="contact-meta mini">
+            <div className="contact-meta" style={{ marginTop: '0.35rem' }}>
               <span>Custom branding</span>
               <span>Bulk dispatch</span>
             </div>
@@ -81,7 +94,7 @@ export default function ContactPage() {
       </section>
 
       <section className="grid">
-        <h3>Direct details</h3>
+        <h2>Direct details</h2>
         <div className="info-card">
           <ul className="direct-list">
             <li><strong>WhatsApp:</strong> <a className="social-link" href={makeWhatsAppUrl('Hi, need pricing and timelines.')} target="_blank" rel="noreferrer"><span className="social-icon" aria-hidden="true">{socialIcons.WhatsApp}</span>+91 {whatsappNumber}</a></li>
@@ -93,6 +106,6 @@ export default function ContactPage() {
           </ul>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
