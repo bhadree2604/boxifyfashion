@@ -4,6 +4,8 @@ import FeaturedCarousel from '../featured-carousel';
 import ScrollReveal from '../scroll-reveal';
 import Image from 'next/image';
 import { fetchProducts } from '@/lib/products-service';
+import GatedLink from '../gated-link';
+
 
 const whatsappNumber = '9817197390';
 const email = 'info@boxifyfashion.com';
@@ -154,10 +156,10 @@ export default function Page() {
               Premium track pants, t-shirts, joggers, jackets, and custom teamwear. Custom orders, bulk pricing, fast delivery.
             </p>
             <div className="hero-actions">
-              <a className="btn solid" href={makeWhatsAppUrl('Hi Boxify Fashion, I want to place a wholesale order.')} target="_blank" rel="noreferrer">
+              <GatedLink className="btn solid" href={makeWhatsAppUrl('Hi Boxify Fashion, I want to place a wholesale order.')} target="_blank" rel="noreferrer">
                 Order on WhatsApp
-              </a>
-              <a className="btn ghost" href={`mailto:${email}`}>Email info@boxifyfashion.com</a>
+              </GatedLink>
+              <GatedLink className="btn ghost" href={`mailto:${email}`}>Email info@boxifyfashion.com</GatedLink>
             </div>
             <div className="pills">
               <span>Bulk-ready</span>
@@ -225,14 +227,14 @@ export default function Page() {
                       <h3>{p.name}</h3>
                       <p className="product-meta">Article {p.article} · {p.fabric}</p>
                       <div className="product-footer compact">
-                        <a
+                        <GatedLink
                           className="btn solid small"
                           href={makeWhatsAppUrl(`Hi, I want to order ${p.name} (Article ${p.article}) from Boxify Fashion. Please share pricing and lead time.`)}
                           target="_blank"
                           rel="noreferrer"
                         >
                           WhatsApp
-                        </a>
+                        </GatedLink>
                         <a className="btn ghost small" href={`mailto:${email}?subject=${encodeURIComponent('Enquiry: ' + p.name)}&body=${encodeURIComponent(`Hi, I want wholesale details for ${p.name} (Article ${p.article}). MOQ 10+.`)}`}>
                           Email
                         </a>
@@ -249,7 +251,7 @@ export default function Page() {
 
           <div className="cta-row" style={{ marginTop: '1rem' }}>
             <a className="btn solid" href="/products">View all products</a>
-            <a className="btn ghost" href={makeWhatsAppUrl('Hi, share full product catalog and pricing for Boxify Fashion.')}>WhatsApp catalog</a>
+            <GatedLink className="btn ghost" href={makeWhatsAppUrl('Hi, share full product catalog and pricing for Boxify Fashion.')}>WhatsApp catalog</GatedLink>
           </div>
         </section>
 
@@ -318,10 +320,10 @@ export default function Page() {
             <p className="muted">Fast quotes on WhatsApp. Branding, labels, packaging on request.</p>
           </div>
           <div className="cta-row">
-            <a className="btn solid" href={makeWhatsAppUrl('Hi, I want to place a wholesale order with Boxify Fashion. Please connect.')} target="_blank" rel="noreferrer">
+            <GatedLink className="btn solid" href={makeWhatsAppUrl('Hi, I want to place a wholesale order with Boxify Fashion. Please connect.')} target="_blank" rel="noreferrer">
               WhatsApp +91 9817197390
-            </a>
-            <a className="btn ghost" href={`mailto:${email}`}>Email info@boxifyfashion.com</a>
+            </GatedLink>
+            <GatedLink className="btn ghost" href={`mailto:${email}`}>Email info@boxifyfashion.com</GatedLink>
           </div>
           <div className="contact-meta">
             <span>MOQ 10 · Volume discounts</span>

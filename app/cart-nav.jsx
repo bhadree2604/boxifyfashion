@@ -6,8 +6,8 @@ export default function CartNav() {
   const { cart } = useCart();
   const count = cart.length || 0;
   return (
-    <Link href="/cart" className={`cart-link ${count === 0 ? 'hidden' : ''}`} aria-hidden={count === 0}>
-      Cart {count > 0 && <span className="cart-badge">{count}</span>}
+    <Link href="/cart" className="cart-link" aria-label={`Cart — ${count} item${count !== 1 ? 's' : ''}`}>
+      Cart <span className="cart-badge">{count}</span>
     </Link>
   );
 }

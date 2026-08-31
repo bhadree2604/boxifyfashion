@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useCart } from '../../cart-provider';
 import { useProfile } from '../../profile-provider';
 import Image from 'next/image';
+import GatedLink from '../../gated-link';
 
 const whatsappNumber = '9817197390';
 const email = 'info@boxifyfashion.com';
@@ -73,7 +74,7 @@ export default function CartPage() {
             )}
           </div>
           <div className="cta-row">
-            <a
+            <GatedLink
               id="cart-wa-checkout-btn"
               className="btn solid"
               href={waLink}
@@ -82,15 +83,15 @@ export default function CartPage() {
               aria-disabled={cart.length === 0}
             >
               Share on WhatsApp
-            </a>
-            <a
+            </GatedLink>
+            <GatedLink
               id="cart-email-checkout-btn"
               className="btn ghost"
               href={mailLink}
               aria-disabled={cart.length === 0}
             >
               Email cart
-            </a>
+            </GatedLink>
             <button
               id="cart-clear-btn"
               className="btn outline"

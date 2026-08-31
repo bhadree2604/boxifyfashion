@@ -3,6 +3,8 @@ const email = 'info@boxifyfashion.com';
 const makeWhatsAppUrl = (text) =>
   `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
 
+import GatedLink from '../../gated-link';
+
 const socialIcons = {
   Instagram: (
     <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zm0 2a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H7zm11.25 1.25a1.25 1.25 0 1 1-2.5 0a1.25 1.25 0 0 1 2.5 0zM12 8.5A3.5 3.5 0 1 1 8.5 12A3.5 3.5 0 0 1 12 8.5zm0 2a1.5 1.5 0 1 0 1.5 1.5A1.5 1.5 0 0 0 12 10.5z"/></svg>
@@ -53,7 +55,7 @@ export default function ContactPage() {
             >
               WhatsApp +91 {whatsappNumber}
             </a>
-            <a className="btn ghost" href={`mailto:${email}`}>Email {email}</a>
+            <GatedLink className="btn ghost" href={`mailto:${email}`}>Email {email}</GatedLink>
           </div>
           <div className="contact-meta">
             <span>MOQ 10 · Volume discounts</span>
@@ -79,7 +81,7 @@ export default function ContactPage() {
             <span className="pill subtle">Quotes &amp; PO</span>
             <h3>Email</h3>
             <p className="muted">Attachments, specs, branding files.</p>
-            <a className="btn ghost small" href={`mailto:${email}`}>Email {email}</a>
+            <GatedLink className="btn ghost small" href={`mailto:${email}`}>Email {email}</GatedLink>
           </div>
           <div className="info-card">
             <span className="pill subtle">Business hours</span>

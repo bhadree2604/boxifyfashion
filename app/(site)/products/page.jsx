@@ -5,6 +5,7 @@ import { useProfile } from '../../profile-provider';
 import { useToast } from '../../toast-provider';
 import { fetchProducts } from '@/lib/products-service';
 import Image from 'next/image';
+import GatedLink from '../../gated-link';
 
 const whatsappNumber = '9817197390';
 const email = 'info@boxifyfashion.com';
@@ -170,14 +171,14 @@ export default function ProductsPage() {
                   <div className="product-footer">
                     <div className="price">₹{p.price} / unit</div>
                     <div className="cta-row">
-                      <a
+                      <GatedLink
                         className="btn solid small"
                         href={makeWhatsAppUrl(waText(p, cardColor[p.id] || p.colors?.[0], cardSize[p.id] || p.sizes?.[0]))}
                         target="_blank"
                         rel="noreferrer"
                       >
                         WhatsApp
-                      </a>
+                      </GatedLink>
                       <button
                         className={`btn outline small${!p.inStock ? ' disabled' : ''}`}
                         type="button"
@@ -275,7 +276,7 @@ export default function ProductsPage() {
                 <div className="product-footer">
                   <div className="price">₹{selected.price} / unit</div>
                   <div className="cta-row">
-                    <a className="btn solid" href={makeWhatsAppUrl(waText(selected, color, size))} target="_blank" rel="noreferrer">WhatsApp</a>
+                    <GatedLink className="btn solid" href={makeWhatsAppUrl(waText(selected, color, size))} target="_blank" rel="noreferrer">WhatsApp</GatedLink>
                     <button
                       className={`btn outline${!selected.inStock ? ' disabled' : ''}`}
                       type="button"
