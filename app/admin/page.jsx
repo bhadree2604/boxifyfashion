@@ -767,7 +767,7 @@ export default function AdminPage() {
               <p className="muted">Logged in as: <strong>{user.email}</strong></p>
             </div>
             <div className="cta-row">
-              <button className="btn ghost" type="button" onClick={handleLogout}>
+              <button className="btn ghost" type="button" onClick={handleLogout} style={{ color: '#dc2626', borderColor: '#fca5a5' }}>
                 Log out
               </button>
             </div>
