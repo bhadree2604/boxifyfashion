@@ -11,6 +11,7 @@ import FloatingButtons from '../floating-buttons';
 import { CustomerAuthProvider } from '../customer-auth-provider';
 import HeaderAuth from '../header-auth';
 import MapSection from '../map-section';
+import VisitTracker from '../visit-tracker';
 
 const whatsappNumber = '9817197390';
 const email = 'info@boxifyfashion.com';
@@ -72,6 +73,7 @@ export default function SiteLayout({ children }) {
                                 </header>
 
                                 <main>{children}</main>
+                            <VisitTracker />
 
                                 <footer className="footer">
                                     <div className="footer-grid">
@@ -102,10 +104,9 @@ export default function SiteLayout({ children }) {
                                         </div>
                                     </div>
                                     <MapSection />
-                                    <div className="footer-bottom">
-                                        <span>© 2026 Boxify Fashion. All rights reserved.</span>
-                                        <Link href="/admin" className="footer-admin-link">Admin Portal</Link>
-                                    </div>
+<div className="footer-bottom">
+          <span>© 2026 Boxify Fashion. All rights reserved.</span>
+        </div>
                                 </footer>
                             </div>
                             <NamePrompt />

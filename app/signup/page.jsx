@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db, isFirebaseConfigured, googleProvider } from '@/lib/firebase';
+import { auth, db, isFirebaseConfigured, googleProvider, isAdminEmail } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -25,6 +25,13 @@ export default function SignUpPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+
+      // If admin email, skip customer profile creation and redirect to admin dashboard
+      if (isAdminEmail(email)) {
+        router.push('/admin');
+        return;
+      }
+
       // Create profile doc with minimal info and profileComplete false
       await setDoc(doc(db, 'customers', user.uid), {
         name,
@@ -56,6 +63,12 @@ export default function SignUpPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
+
+      // If admin email, skip customer profile creation and redirect to admin dashboard
+      if (isAdminEmail(user.email)) {
+        router.push('/admin');
+        return;
+      }
 
       // Check if customer profile exists
       const customerRef = doc(db, 'customers', user.uid);

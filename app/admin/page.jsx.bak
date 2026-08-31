@@ -1,0 +1,675 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { auth, isFirebaseConfigured, googleProvider } from '@/lib/firebase';
+import {
+  fetchProducts,
+  addProduct,
+  updateProduct,
+  deleteProduct,
+  uploadProductImage,
+} from '@/lib/products-service';
+import Image from 'next/image';
+import Link from 'next/link';
+
+export default function AdminPage() {
+  const [user, setUser] = useState(null);
+  const [authChecking, setAuthChecking] = useState(true);
+
+  // Google login state
+  const [googleLoginError, setGoogleLoginError] = useState('');
+  const [googleLoggingIn, setGoogleLoggingIn] = useState(false);
+
+  // Products state
+  const [productsList, setProductsList] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  // Modal / Form state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null); // null = add, object = edit
+  const [deleteConfirmProduct, setDeleteConfirmProduct] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
+  const [formError, setFormError] = useState('');
+
+  // Form inputs
+  const [formData, setFormData] = useState({
+    name: '',
+    category: 'Casual Pants',
+    article: '',
+    sku: '',
+    fabric: '',
+    price: '',
+    description: '',
+    inStock: true,
+    colorsText: '',
+    sizesText: '',
+    images: [],
+  });
+
+  // Check auth state
+  useEffect(() => {
+    if (!isFirebaseConfigured || !auth) {
+      setAuthChecking(false);
+      return;
+    }
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthChecking(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Load products when user is authenticated
+  const loadAdminProducts = async () => {
+    setLoadingProducts(true);
+    try {
+      const items = await fetchProducts();
+      setProductsList(items || []);
+    } catch (err) {
+      console.error('Failed to load products in admin:', err);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadAdminProducts();
+    }
+  }, [user]);
+
+  // Handle Google Login
+  const handleGoogleLogin = async () => {
+    setGoogleLoginError('');
+    if (!isFirebaseConfigured || !auth) {
+      setGoogleLoginError('Firebase credentials are not set in .env.local!');
+      return;
+    }
+    setGoogleLoggingIn(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const allowedEmailsStr = process.env.NEXT_PUBLIC_ADMIN_EMAILS;
+      if (!allowedEmailsStr) {
+        setGoogleLoginError('Admin emails not configured. Please set NEXT_PUBLIC_ADMIN_EMAILS in .env.local');
+        await signOut(auth);
+      } else {
+        const allowedEmails = allowedEmailsStr
+          .split(',')
+          .map(email => email.trim().toLowerCase())
+          .filter(email => email.length > 0);
+        const userEmail = result.user.email.toLowerCase();
+        if (!allowedEmails.includes(userEmail)) {
+          await signOut(auth);
+          setGoogleLoginError('Unauthorized account. Access denied.');
+        }
+      }
+    } catch (err) {
+      console.error('Google login failed:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setGoogleLoginError('Login cancelled.');
+      } else {
+        setGoogleLoginError(`Login failed: ${err.message}`);
+      }
+    } finally {
+      setGoogleLoggingIn(false);
+    }
+};
+
+// Handle Google Login
+  const handleGoogleLogin = async () => {
+  const handleLogout = async () => {
+    if (auth) {
+      await signOut(auth);
+    }
+  };
+
+  // Open Add Modal
+  const openAddModal = () => {
+    setEditingProduct(null);
+    setFormData({
+      name: '',
+      category: 'Casual Pants',
+      article: '',
+      sku: '',
+      fabric: '',
+      price: '',
+      description: '',
+      inStock: true,
+      colorsText: 'Black, Grey, Khaki',
+      sizesText: 'M, L, XL, XXL',
+      images: [],
+    });
+    setFormError('');
+    setModalOpen(true);
+  };
+
+  // Open Edit Modal
+  const openEditModal = (product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name || '',
+      category: product.category || 'Casual Pants',
+      article: product.article || '',
+      sku: product.sku || '',
+      fabric: product.fabric || '',
+      price: product.price || '',
+      description: product.description || '',
+      inStock: product.inStock !== undefined ? product.inStock : true,
+      colorsText: Array.isArray(product.colors) ? product.colors.join(', ') : '',
+      sizesText: Array.isArray(product.sizes) ? product.sizes.join(', ') : '',
+      images: Array.isArray(product.images) ? [...product.images] : (product.image ? [product.image] : []),
+    });
+    setFormError('');
+    setModalOpen(true);
+  };
+
+  // Image Upload Handler
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    setUploadingImage(true);
+    setUploadProgress(`Compressing & uploading ${files.length} file(s)...`);
+
+    try {
+      const uploadedUrls = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setUploadProgress(`Uploading ${i + 1} of ${files.length}: ${file.name}...`);
+        const url = await uploadProductImage(file, editingProduct ? editingProduct.id : 'new');
+        uploadedUrls.push(url);
+      }
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...uploadedUrls],
+      }));
+      setUploadProgress('Upload complete!');
+      setTimeout(() => setUploadProgress(''), 2000);
+    } catch (err) {
+      console.error('Image upload error:', err);
+      setFormError(`Image upload failed: ${err.message}`);
+    } finally {
+      setUploadingImage(false);
+      e.target.value = '';
+    }
+  };
+
+  // Remove Image from array
+  const handleRemoveImage = (indexToRemove) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, idx) => idx !== indexToRemove),
+    }));
+  };
+
+  // Form Submit (Add / Edit)
+  const handleSubmitForm = async (e) => {
+    e.preventDefault();
+    setFormError('');
+
+    if (!formData.name.trim()) {
+      setFormError('Product Name is required.');
+      return;
+    }
+    if (!formData.price || isNaN(formData.price)) {
+      setFormError('Please enter a valid Price.');
+      return;
+    }
+
+    const colors = formData.colorsText
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
+
+    const sizes = formData.sizesText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const payload = {
+      name: formData.name.trim(),
+      category: formData.category.trim(),
+      article: formData.article.trim(),
+      sku: formData.sku.trim(),
+      fabric: formData.fabric.trim(),
+      price: Number(formData.price),
+      description: formData.description.trim(),
+      inStock: Boolean(formData.inStock),
+      colors,
+      sizes,
+      images: formData.images.length > 0 ? formData.images : ['/images/art-201.jpeg'],
+    };
+
+    setSubmitting(true);
+    try {
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, payload);
+      } else {
+        await addProduct(payload);
+      }
+      setModalOpen(false);
+      await loadAdminProducts();
+    } catch (err) {
+      console.error('Save product error:', err);
+      setFormError(`Failed to save product: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Delete Product
+  const handleDeleteProduct = async () => {
+    if (!deleteConfirmProduct) return;
+    setSubmitting(true);
+    try {
+      await deleteProduct(deleteConfirmProduct.id);
+      setDeleteConfirmProduct(null);
+      await loadAdminProducts();
+    } catch (err) {
+      console.error('Delete product error:', err);
+      alert(`Failed to delete product: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Loading / Auth Checking View
+  if (authChecking) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)',
+      }}>
+        <div style={{
+          width: 36, height: 36,
+          border: '3px solid #e5e7eb',
+          borderTopColor: '#4f46e5',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  // Not Logged In View
+  if (!user) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)',
+        padding: '1.5rem',
+      }}>
+        <div style={{
+          width: '100%',
+          maxWidth: 420,
+          background: 'white',
+          borderRadius: '16px',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
+          padding: '2.5rem 2rem',
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <Image src="/logo-2026.png" alt="Boxify Fashion" width={120} height={72} style={{ margin: '0 auto 1rem' }} />
+            <h1 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>Boxify Fashion</h1>
+            <p className="muted">Admin Dashboard</p>
+          </div>
+
+          {!isFirebaseConfigured && (
+            <div className="admin-warning-card">
+              <h4>Firebase Credentials Required</h4>
+              <p>
+                To enable live updates and authentication, please update <code>.env.local</code> with your Firebase project API keys.
+              </p>
+            </div>
+          )}
+
+          {googleLoginError && <div className="admin-error-banner" style={{ marginBottom: '0.75rem' }}>{googleLoginError}</div>}
+          <button
+            className="btn outline"
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={googleLoggingIn}
+            style={{ width: '100%' }}
+          >
+            {googleLoggingIn ? 'Signing in with Google...' : 'Continue with Google'}
+          </button>
+
+          <p className="muted" style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem' }}>
+            <Link href="/" style={{ textDecoration: 'underline' }}>Back to Store Home</Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated Admin Dashboard
+  return (
+    <div className="page-main">
+      <section className="grid">
+        <div className="admin-header-bar">
+          <div>
+            <h1>Product Catalog Manager</h1>
+            <p className="muted">Logged in as: <strong>{user.email}</strong></p>
+          </div>
+          <div className="cta-row">
+            <button className="btn solid" type="button" onClick={openAddModal}>
+              + Add New Product
+            </button>
+            <button className="btn ghost" type="button" onClick={handleLogout}>
+              Log out
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid">
+        <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2>Live Products ({productsList.length})</h2>
+          <button className="btn outline small" type="button" onClick={loadAdminProducts}>
+            Refresh
+          </button>
+        </div>
+
+        {loadingProducts ? (
+          <p className="muted">Loading product catalog...</p>
+        ) : productsList.length === 0 ? (
+          <div className="admin-empty-state">
+            <p className="muted">No products found in Firestore.</p>
+            <button className="btn solid small" type="button" onClick={openAddModal} style={{ marginTop: '0.5rem' }}>
+              Add First Product
+            </button>
+          </div>
+        ) : (
+          <div className="admin-products-table-wrap">
+            <table className="admin-products-table">
+              <thead>
+                <tr>
+                  <th>Thumbnail</th>
+                  <th>Product Details</th>
+                  <th>SKU / Article</th>
+                  <th>Price</th>
+                  <th>Stock Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productsList.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <div className="admin-thumb-cell">
+                        <Image
+                          src={p.image || (p.images && p.images[0]) || '/images/art-201.jpeg'}
+                          alt={p.name}
+                          width={60}
+                          height={60}
+                          style={{ objectFit: 'cover', borderRadius: '8px' }}
+                        />
+                      </div>
+                    </td>
+                    <td>
+                      <div className="admin-product-info">
+                        <strong>{p.name}</strong>
+                        <span className="muted" style={{ fontSize: '0.85rem' }}>{p.category} · {p.fabric}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="muted">{p.sku || p.article || 'N/A'}</span>
+                    </td>
+                    <td>
+                      <strong>₹{p.price}</strong>
+                    </td>
+                    <td>
+                      {p.inStock ? (
+                        <span className="pill subtle" style={{ color: '#15803d', borderColor: '#bbf7d0' }}>In Stock</span>
+                      ) : (
+                        <span className="badge out-of-stock">Out of Stock</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="cta-row" style={{ gap: '0.35rem' }}>
+                        <button className="btn outline small" type="button" onClick={() => openEditModal(p)}>
+                          Edit
+                        </button>
+                        <button
+                          className="btn ghost small"
+                          type="button"
+                          onClick={() => setDeleteConfirmProduct(p)}
+                          style={{ color: '#dc2626' }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Add / Edit Product Modal */}
+      {modalOpen && (
+        <div className="modal" role="dialog" aria-modal="true">
+          <div className="modal-backdrop" onClick={() => setModalOpen(false)} />
+          <div className="modal-card" style={{ maxWidth: 640 }}>
+            <button className="modal-close-top" onClick={() => setModalOpen(false)} aria-label="Close">×</button>
+            <div className="modal-body" style={{ gridTemplateColumns: '1fr' }}>
+              <div>
+                <h2>{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
+                <p className="muted" style={{ marginBottom: '1rem' }}>
+                  {editingProduct ? `Updating ${editingProduct.name}` : 'Fill in product details for wholesale catalog'}
+                </p>
+
+                {formError && <div className="admin-error-banner" style={{ marginBottom: '1rem' }}>{formError}</div>}
+
+                <form onSubmit={handleSubmitForm} style={{ display: 'grid', gap: '1rem' }}>
+                  <div className="admin-form-row">
+                    <label className="admin-form-group">
+                      <span>Product Name *</span>
+                      <input
+                        type="text"
+                        required
+                        className="admin-input"
+                        placeholder="e.g. Premium Cargo Pants"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="admin-form-row">
+                    <label className="admin-form-group">
+                      <span>Category</span>
+                      <select
+                        className="admin-input"
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      >
+                        <option value="Cargo Pants">Cargo Pants</option>
+                        <option value="Casual Pants">Casual Pants</option>
+                        <option value="Heavy Lycra">Heavy Lycra</option>
+                        <option value="T-Shirts">T-Shirts</option>
+                        <option value="Tracksuits">Tracksuits</option>
+                        <option value="Jackets">Jackets</option>
+                        <option value="Teamwear">Teamwear</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="admin-form-row">
+                    <label className="admin-form-group">
+                      <span>Price (₹ / unit) *</span>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        className="admin-input"
+                        placeholder="450"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="admin-form-row">
+                    <label className="admin-form-group">
+                      <span>Article No.</span>
+                      <input
+                        type="text"
+                        className="admin-input"
+                        placeholder="10086"
+                        value={formData.article}
+                        onChange={(e) => setFormData({ ...formData, article: e.target.value })}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="admin-form-row">
+                    <label className="admin-form-group">
+                      <span>Fabric Type</span>
+                      <input
+                        type="text"
+                        className="admin-input"
+                        placeholder="Nylon Crush Lycra Terry"
+                        value={formData.fabric}
+                        onChange={(e) => setFormData({ ...formData, fabric: e.target.value })}
+                      />
+                    </label>
+                  </div>
+
+                  <label className="admin-form-group">
+                    <span>Description</span>
+                    <textarea
+                      className="admin-input"
+                      rows={3}
+                      placeholder="Wholesale fabric description, fit details, pockets, etc."
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    />
+                  </label>
+
+                  <div className="admin-form-row">
+                    <label className="admin-form-group">
+                      <span>Colors (comma separated)</span>
+                      <input
+                        type="text"
+                        className="admin-input"
+                        placeholder="Black, Grey, Khaki, Olive"
+                        value={formData.colorsText}
+                        onChange={(e) => setFormData({ ...formData, colorsText: e.target.value })}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="admin-form-row">
+                    <label className="admin-form-group">
+                      <span>Sizes (comma separated)</span>
+                      <input
+                        type="text"
+                        className="admin-input"
+                        placeholder="M, L, XL, XXL"
+                        value={formData.sizesText}
+                        onChange={(e) => setFormData({ ...formData, sizesText: e.target.value })}
+                      />
+                    </label>
+                  </div>
+
+                  <label className="admin-checkbox-group">
+                    <input
+                      type="checkbox"
+                      checked={formData.inStock}
+                      onChange={(e) => setFormData({ ...formData, inStock: e.target.checked })}
+                    />
+                    <span>Product is in Stock (Check to enable Add to Cart for customers)</span>
+                  </label>
+
+                  {/* Images Upload Section */}
+                  <div className="admin-images-section">
+                    <label className="admin-form-group">
+                      <span>Product Images</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={uploadingImage}
+                        onChange={handleFileUpload}
+                        className="admin-file-input"
+                      />
+                    </label>
+
+                    {uploadProgress && <div className="admin-upload-progress">{uploadProgress}</div>}
+
+                    {formData.images.length > 0 && (
+                      <div className="admin-images-preview-grid">
+                        {formData.images.map((imgUrl, index) => (
+                          <div className="admin-img-preview" key={index}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={imgUrl} alt={`Preview ${index + 1}`} />
+                            <button
+                              type="button"
+                              className="admin-img-remove-btn"
+                              onClick={() => handleRemoveImage(index)}
+                              title="Remove image"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="cta-row" style={{ marginTop: '1rem', justifyContent: 'flex-end' }}>
+                    <button className="btn outline" type="button" onClick={() => setModalOpen(false)}>
+                      Cancel
+                    </button>
+                    <button className="btn solid" type="submit" disabled={submitting || uploadingImage}>
+                      {submitting ? 'Saving...' : editingProduct ? 'Update Product' : 'Add Product'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmProduct && (
+        <div className="modal" role="dialog" aria-modal="true">
+          <div className="modal-backdrop" onClick={() => setDeleteConfirmProduct(null)} />
+          <div className="modal-card" style={{ maxWidth: 440 }}>
+            <div className="modal-body" style={{ gridTemplateColumns: '1fr' }}>
+              <div>
+                <h3>Delete Product?</h3>
+                <p className="muted" style={{ marginTop: '0.5rem' }}>
+                  Are you sure you want to delete <strong>{deleteConfirmProduct.name}</strong>? This action cannot be undone.
+                </p>
+                <div className="cta-row" style={{ marginTop: '1rem', justifyContent: 'flex-end' }}>
+                  <button className="btn outline" type="button" onClick={() => setDeleteConfirmProduct(null)}>
+                    Cancel
+                  </button>
+                  <button
+                    className="btn solid"
+                    type="button"
+                    onClick={handleDeleteProduct}
+                    disabled={submitting}
+                    style={{ backgroundColor: '#dc2626', borderColor: '#dc2626' }}
+                  >
+                    {submitting ? 'Deleting...' : 'Yes, Delete'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+  );
+}

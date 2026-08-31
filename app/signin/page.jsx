@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { auth } from '@/lib/firebase';
+import { auth, isAdminEmail } from '@/lib/firebase';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured, googleProvider } from '@/lib/firebase';
+import { logLoginEvent } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -24,7 +25,12 @@ export default function SignInPage() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/');
+      logLoginEvent(email, isAdminEmail(email) ? 'admin' : 'customer');
+      if (isAdminEmail(email)) {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -45,6 +51,13 @@ export default function SignInPage() {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
+      // If admin email, skip customer profile creation and redirect to admin dashboard
+      if (isAdminEmail(user.email)) {
+        logLoginEvent(user.email, 'admin');
+        router.push('/admin');
+        return;
+      }
+
       // Check if customer profile exists
       const customerRef = doc(db, 'customers', user.uid);
       const customerSnap = await getDoc(customerRef);
@@ -58,6 +71,7 @@ export default function SignInPage() {
           profileComplete: false,
         });
       }
+      logLoginEvent(user.email, 'customer');
       // Let customer-auth-provider handle redirect to /complete-profile if needed
       router.push('/');
     } catch (err) {

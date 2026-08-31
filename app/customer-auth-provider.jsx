@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, isAdminEmail } from '@/lib/firebase';
 
 const CustomerAuthContext = createContext(null);
 
@@ -22,6 +22,14 @@ export function CustomerAuthProvider({ children }) {
     }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        // Skip all customer profile logic for admin emails
+        if (isAdminEmail(user.email)) {
+          setCustomer(user);
+          setCustomerProfile(null);
+          setLoading(false);
+          return;
+        }
+
         setCustomer(user);
         // Fetch profile from Firestore
         const profileRef = doc(db, 'customers', user.uid);
