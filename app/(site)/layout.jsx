@@ -4,7 +4,6 @@ import SplashProvider from '../splash-provider';
 import { CartProvider } from '../cart-provider';
 import CartNav from '../cart-nav';
 import { ProfileProvider } from '../profile-provider';
-import NamePrompt from '../name-prompt';
 import NavToggle from '../nav-toggle';
 import { ToastProvider } from '../toast-provider';
 import FloatingButtons from '../floating-buttons';
@@ -109,7 +108,6 @@ export default function SiteLayout({ children }) {
         </div>
                                 </footer>
                             </div>
-                            <NamePrompt />
                             <FloatingButtons />
                         </SplashProvider>
                     </ToastProvider>

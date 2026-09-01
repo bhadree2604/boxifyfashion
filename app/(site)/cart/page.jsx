@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useCart } from '../../cart-provider';
-import { useProfile } from '../../profile-provider';
 import Image from 'next/image';
 import GatedLink from '../../gated-link';
 
@@ -13,7 +12,6 @@ const makeWhatsAppUrl = (text) =>
 
 export default function CartPage() {
   const { cart, removeItem, clearCart, updateQty, updateVariant } = useCart();
-  const { name: profileName } = useProfile();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleClear = () => {
@@ -25,8 +23,6 @@ export default function CartPage() {
     setConfirmOpen(false);
   };
   const cancelClear = () => setConfirmOpen(false);
-
-  const userName = profileName || 'Customer';
 
   // Order summary calculations
   const subtotal = cart.reduce((sum, item) => sum + (item.price || 0) * (item.qty || 1), 0);
@@ -44,7 +40,6 @@ export default function CartPage() {
         `${idx + 1}. ${item.name} (Article ${item.article}) | Color: ${item.color} | Size: ${item.size} | Qty: ${item.qty || 1} | ₹${(item.price || 0) * (item.qty || 1)}`
     );
     return [
-      `From: ${userName}`,
       `Order Date: ${orderDate}`,
       `Order Request:`,
       ...lines,

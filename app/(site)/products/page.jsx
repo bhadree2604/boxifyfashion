@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useCart } from '../../cart-provider';
-import { useProfile } from '../../profile-provider';
 import { useToast } from '../../toast-provider';
 import { fetchProducts } from '@/lib/products-service';
 import Image from 'next/image';
@@ -23,7 +22,6 @@ export default function ProductsPage() {
   const [cardSize, setCardSize] = useState({});
 
   const { cart, addItem } = useCart();
-  const { name: profileName } = useProfile();
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -58,8 +56,7 @@ export default function ProductsPage() {
   };
 
   const waText = (p, c, s) => {
-    const user = profileName || 'Customer';
-    return `From: ${user} | Order: ${p.name} (Article ${p.article}) | Color: ${c} | Size: ${s}. Please share pricing and lead time.`;
+    return `Order: ${p.name} (Article ${p.article}) | Color: ${c} | Size: ${s}. Please share pricing and lead time.`;
   };
 
   const addToCart = (p, fromList = false) => {
