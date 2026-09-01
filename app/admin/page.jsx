@@ -28,14 +28,10 @@ export default function AdminPage() {
   const [user, setUser] = useState(null);
   const [authChecking, setAuthChecking] = useState(true);
 
-  // Gate state
-  const [gateUnlocked, setGateUnlocked] = useState(() => {
-    try {
-      return sessionStorage.getItem('adminGateUnlocked') === 'true';
-    } catch (e) {
-      return false;
-    }
-  });
+  // Gate state — default false to avoid SSR hydration mismatch;
+  // read sessionStorage only after mount on the client.
+  const [gateUnlocked, setGateUnlocked] = useState(false);
+  const [gateChecked, setGateChecked] = useState(false);
   const [gatePassword, setGatePassword] = useState('');
   const [gateError, setGateError] = useState('');
 
@@ -95,6 +91,19 @@ export default function AdminPage() {
       setAuthChecking(false);
     });
     return () => unsubscribe();
+  }, []);
+
+  // Read gate flag from sessionStorage ONLY after client mount
+  // to avoid SSR hydration mismatch (sessionStorage is unavailable on the server).
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('adminGateUnlocked') === 'true') {
+        setGateUnlocked(true);
+      }
+    } catch (e) {
+      // sessionStorage may fail in some environments; ignore
+    }
+    setGateChecked(true);
   }, []);
 
   // Load products when user is authenticated
@@ -1057,7 +1066,7 @@ export default function AdminPage() {
   };
 
   // --- Main Render Logic ---
-  if (authChecking) {
+  if (authChecking || !gateChecked) {
     return (
       <div style={{
         minHeight: '100vh',
