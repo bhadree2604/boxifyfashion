@@ -274,17 +274,17 @@ export default function AdminPage() {
   const openEditModal = (product) => {
     setEditingProduct(product);
     setFormData({
-      name: product.name || '',
-      category: product.category || 'Casual Pants',
-      article: product.article || '',
-      sku: product.sku || '',
-      fabric: product.fabric || '',
+      name: String(product.name || ''),
+      category: String(product.category || 'Casual Pants'),
+      article: String(product.article || ''),
+      sku: String(product.sku || ''),
+      fabric: String(product.fabric || ''),
       price: product.price || '',
-      description: product.description || '',
-      inStock: product.inStock !== undefined ? product.inStock : true,
-      colorsText: Array.isArray(product.colors) ? product.colors.join(', ') : '',
-      sizesText: Array.isArray(product.sizes) ? product.sizes.join(', ') : '',
-      images: Array.isArray(product.images) ? [...product.images] : (product.image ? [product.image] : []),
+      description: String(product.description || ''),
+      inStock: product.inStock !== undefined ? Boolean(product.inStock) : true,
+      colorsText: Array.isArray(product.colors) ? product.colors.map(String).join(', ') : '',
+      sizesText: Array.isArray(product.sizes) ? product.sizes.map(String).join(', ') : '',
+      images: Array.isArray(product.images) ? product.images.map(String) : (product.image ? [String(product.image)] : []),
     });
     setFormError('');
     setModalOpen(true);
@@ -354,23 +354,29 @@ export default function AdminPage() {
       .filter(Boolean);
 
     const payload = {
-      name: formData.name.trim(),
-      category: formData.category.trim(),
-      article: formData.article.trim(),
-      sku: formData.sku.trim(),
-      fabric: formData.fabric.trim(),
+      name: String(formData.name.trim()),
+      category: String(formData.category.trim()),
+      article: String(formData.article.trim()),
+      sku: String(formData.sku.trim()),
+      fabric: String(formData.fabric.trim()),
       price: Number(formData.price),
-      description: formData.description.trim(),
+      description: String(formData.description.trim()),
       inStock: Boolean(formData.inStock),
       colors,
       sizes,
-      images: formData.images.length > 0 ? formData.images : ['/images/art-201.jpeg'],
+      images: formData.images.length > 0 ? formData.images.map(String) : ['/images/art-201.jpeg'],
     };
 
     setSubmitting(true);
     try {
       if (editingProduct) {
-        await updateProduct(editingProduct.id, payload);
+        const editId = String(editingProduct.id || '');
+        if (!editId || editId === 'undefined' || editId === 'null') {
+          setFormError('Cannot update product: invalid ID.');
+          setSubmitting(false);
+          return;
+        }
+        await updateProduct(editId, payload);
       } else {
         await addProduct(payload);
       }
@@ -387,9 +393,15 @@ export default function AdminPage() {
   // Delete Product
   const handleDeleteProduct = async () => {
     if (!deleteConfirmProduct) return;
+    const productId = String(deleteConfirmProduct.id || '');
+    if (!productId || productId === 'undefined' || productId === 'null') {
+      alert('Cannot delete product: invalid ID.');
+      setDeleteConfirmProduct(null);
+      return;
+    }
     setSubmitting(true);
     try {
-      await deleteProduct(deleteConfirmProduct.id);
+      await deleteProduct(productId);
       setDeleteConfirmProduct(null);
       await loadAdminProducts();
     } catch (err) {
