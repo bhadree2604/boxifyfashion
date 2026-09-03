@@ -13,8 +13,12 @@ import {
 import {
   getVisitsByDay,
   getLoginsByDay,
+  getPurchasesByDay,
   getCountInRange,
   getTodayCount,
+  getTodayConfirmedPurchases,
+  getAllPurchases,
+  updatePurchaseStatus,
   buildDailyArray,
   buildWeeklyArray,
   buildMonthlyArray,
@@ -76,9 +80,16 @@ export default function AdminPage() {
   const [loadingOverview, setLoadingOverview] = useState(false);
   const [reportsVisitChart, setReportsVisitChart] = useState([]);
   const [reportsLoginChart, setReportsLoginChart] = useState([]);
+  const [reportsPurchaseChart, setReportsPurchaseChart] = useState([]);
   const [reportsPeriod, setReportsPeriod] = useState('weekly');
   const [loadingReports, setLoadingReports] = useState(false);
-  const [todayStats, setTodayStats] = useState({ visits: 0, logins: 0 });
+  const [todayStats, setTodayStats] = useState({ visits: 0, logins: 0, purchases: 0 });
+
+  // Orders state
+  const [purchasesList, setPurchasesList] = useState([]);
+  const [loadingPurchases, setLoadingPurchases] = useState(true);
+  const [purchaseStatusFilter, setPurchaseStatusFilter] = useState('pending');
+  const [updatingPurchaseId, setUpdatingPurchaseId] = useState(null);
 
   // Check auth state
   useEffect(() => {
@@ -146,11 +157,12 @@ export default function AdminPage() {
       setOverviewStats({ visits: visitsThisWeek, logins: loginsThisWeek });
       setOverviewChart(chartData);
 
-      const [todayVisits, todayLogins] = await Promise.all([
+      const [todayVisits, todayLogins, todayPurchases] = await Promise.all([
         getTodayCount('site_visits'),
         getTodayCount('login_events'),
+        getTodayConfirmedPurchases(),
       ]);
-      setTodayStats({ visits: todayVisits, logins: todayLogins });
+      setTodayStats({ visits: todayVisits, logins: todayLogins, purchases: todayPurchases });
     } catch (err) {
       console.error('Failed to load overview:', err);
     } finally {
@@ -179,27 +191,32 @@ export default function AdminPage() {
         startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
       }
 
-      const [visitCounts, loginCounts] = await Promise.all([
+      const [visitCounts, loginCounts, purchaseCounts] = await Promise.all([
         getVisitsByDay(startDate, now),
         getLoginsByDay(startDate, now),
+        getPurchasesByDay(startDate, now),
       ]);
 
-      let visitData, loginData;
+      let visitData, loginData, purchaseData;
       if (reportsPeriod === 'weekly') {
         visitData = buildWeeklyArray(visitCounts, 3);
         loginData = buildWeeklyArray(loginCounts, 3);
+        purchaseData = buildWeeklyArray(purchaseCounts, 3);
       } else {
         visitData = buildMonthlyArray(visitCounts, 3);
         loginData = buildMonthlyArray(loginCounts, 3);
+        purchaseData = buildMonthlyArray(purchaseCounts, 3);
       }
       setReportsVisitChart(visitData);
       setReportsLoginChart(loginData);
+      setReportsPurchaseChart(purchaseData);
 
-      const [todayVisits, todayLogins] = await Promise.all([
+      const [todayVisits, todayLogins, todayPurchases] = await Promise.all([
         getTodayCount('site_visits'),
         getTodayCount('login_events'),
+        getTodayConfirmedPurchases(),
       ]);
-      setTodayStats({ visits: todayVisits, logins: todayLogins });
+      setTodayStats({ visits: todayVisits, logins: todayLogins, purchases: todayPurchases });
     } catch (err) {
       console.error('Failed to load reports:', err);
     } finally {
@@ -256,6 +273,47 @@ export default function AdminPage() {
   const handleLogout = async () => {
     if (auth) {
       await signOut(auth);
+    }
+  };
+
+  // Load purchases for Orders tab
+  const loadPurchases = useCallback(async () => {
+    if (!user) return;
+    setLoadingPurchases(true);
+    try {
+      const items = await getAllPurchases();
+      setPurchasesList(items || []);
+    } catch (err) {
+      console.error('Failed to load purchases:', err);
+    } finally {
+      setLoadingPurchases(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user && activeTab === 'orders') {
+      loadPurchases();
+    }
+  }, [user, activeTab, loadPurchases]);
+
+  // Confirm or cancel a purchase
+  const handleUpdatePurchaseStatus = async (purchaseId, newStatus) => {
+    setUpdatingPurchaseId(purchaseId);
+    try {
+      const ok = await updatePurchaseStatus(purchaseId, newStatus);
+      if (ok) {
+        setPurchasesList((prev) =>
+          prev.map((p) =>
+            p.id === purchaseId
+              ? { ...p, status: newStatus, confirmedAt: newStatus === 'confirmed' ? new Date() : p.confirmedAt }
+              : p
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Failed to update purchase:', err);
+    } finally {
+      setUpdatingPurchaseId(null);
     }
   };
 
@@ -569,7 +627,7 @@ export default function AdminPage() {
 
       <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '2rem' }}>
         <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#92400e' }}>
-          Today (live): {todayStats.visits} visits, {todayStats.logins} logins
+          Today (live): {todayStats.visits} visits, {todayStats.logins} logins, {todayStats.purchases} confirmed orders
         </p>
       </div>
 
@@ -718,7 +776,7 @@ export default function AdminPage() {
 
       <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '2rem' }}>
         <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#92400e' }}>
-          Today (live): {todayStats.visits} visits, {todayStats.logins} logins
+          Today (live): {todayStats.visits} visits, {todayStats.logins} logins, {todayStats.purchases} confirmed orders
         </p>
       </div>
 
@@ -747,7 +805,7 @@ export default function AdminPage() {
           {reportsLoginChart.length === 0 ? (
             <p className="muted">No login data yet.</p>
           ) : (
-            <div style={{ width: '100%', height: 300 }}>
+            <div style={{ width: '100%', height: 300, marginBottom: '2rem' }}>
               <ResponsiveContainer>
                 <BarChart data={reportsLoginChart}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -760,22 +818,204 @@ export default function AdminPage() {
             </div>
           )}
 
-          <div style={{ marginTop: '2rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <p className="muted" style={{ fontSize: '0.85rem' }}>
-              <strong>Note:</strong> Purchase/order reporting will be available once a Firestore-backed checkout flow is implemented.
-              Currently orders are handled via WhatsApp/email.
-            </p>
-          </div>
+          <h3 style={{ marginBottom: '0.75rem' }}>Purchases — Confirmed ({reportsPeriod})</h3>
+          {reportsPurchaseChart.length === 0 ? (
+            <p className="muted">No confirmed purchase data yet.</p>
+          ) : (
+            <div style={{ width: '100%', height: 300, marginBottom: '2rem' }}>
+              <ResponsiveContainer>
+                <BarChart data={reportsPurchaseChart}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </>
       )}
     </div>
   );
+
+  // --- Tab: Orders ---
+  const renderOrders = () => {
+    const statusFilters = ['pending', 'confirmed', 'cancelled', 'all'];
+    const filtered = purchaseStatusFilter === 'all'
+      ? purchasesList
+      : purchasesList.filter((p) => p.status === purchaseStatusFilter);
+
+    const statusColor = (s) => {
+      if (s === 'confirmed') return { bg: '#f0fdf4', border: '#bbf7d0', text: '#15803d' };
+      if (s === 'cancelled') return { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' };
+      return { bg: '#fffbeb', border: '#fde68a', text: '#92400e' };
+    };
+
+    return (
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2>Orders ({purchasesList.length})</h2>
+          <button className="btn outline small" type="button" onClick={loadPurchases}>
+            Refresh
+          </button>
+        </div>
+
+        {/* Status filter pills */}
+        <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+          {statusFilters.map((s) => {
+            const count = s === 'all' ? purchasesList.length : purchasesList.filter((p) => p.status === s).length;
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setPurchaseStatusFilter(s)}
+                style={{
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '20px',
+                  border: purchaseStatusFilter === s ? '2px solid #4f46e5' : '1px solid #e2e8f0',
+                  cursor: 'pointer',
+                  fontWeight: purchaseStatusFilter === s ? 600 : 400,
+                  background: purchaseStatusFilter === s ? '#eef2ff' : 'white',
+                  textTransform: 'capitalize',
+                  fontSize: '0.85rem',
+                }}
+              >
+                {s} ({count})
+              </button>
+            );
+          })}
+        </div>
+
+        {loadingPurchases ? (
+          <p className="muted">Loading orders...</p>
+        ) : filtered.length === 0 ? (
+          <div className="admin-empty-state">
+            <p className="muted">No {purchaseStatusFilter === 'all' ? '' : purchaseStatusFilter + ' '}orders found.</p>
+          </div>
+        ) : (
+          <div className="admin-products-table-wrap">
+            <table className="admin-products-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Customer</th>
+                  <th>Details</th>
+                  <th>Price</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => {
+                  const sc = statusColor(p.status);
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <div className="admin-product-info">
+                          <strong>{p.product?.name || 'Unknown'}</strong>
+                          <span className="muted" style={{ fontSize: '0.85rem' }}>{p.product?.category || ''}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="admin-product-info">
+                          <span>{p.customer?.name || 'N/A'}</span>
+                          <span className="muted" style={{ fontSize: '0.85rem' }}>{p.customer?.email || ''}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="muted">
+                          {p.product?.color && `Color: ${p.product.color}`}
+                          {p.product?.color && p.product?.size && ' · '}
+                          {p.product?.size && `Size: ${p.product.size}`}
+                          {p.quantity > 1 && ` × ${p.quantity}`}
+                        </span>
+                      </td>
+                      <td><strong>₹{p.product?.price || 0}</strong></td>
+                      <td>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '12px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          background: sc.bg,
+                          border: `1px solid ${sc.border}`,
+                          color: sc.text,
+                          textTransform: 'capitalize',
+                        }}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="muted" style={{ fontSize: '0.85rem' }}>
+                          {p._date?.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) || '—'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="cta-row" style={{ gap: '0.35rem' }}>
+                          {p.status === 'pending' && (
+                            <>
+                              <button
+                                className="btn solid small"
+                                type="button"
+                                disabled={updatingPurchaseId === p.id}
+                                onClick={() => handleUpdatePurchaseStatus(p.id, 'confirmed')}
+                              >
+                                {updatingPurchaseId === p.id ? '…' : 'Confirm'}
+                              </button>
+                              <button
+                                className="btn ghost small"
+                                type="button"
+                                disabled={updatingPurchaseId === p.id}
+                                onClick={() => handleUpdatePurchaseStatus(p.id, 'cancelled')}
+                                style={{ color: '#dc2626' }}
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          )}
+                          {p.status === 'confirmed' && (
+                            <button
+                              className="btn ghost small"
+                              type="button"
+                              disabled={updatingPurchaseId === p.id}
+                              onClick={() => handleUpdatePurchaseStatus(p.id, 'cancelled')}
+                              style={{ color: '#dc2626' }}
+                            >
+                              Cancel
+                            </button>
+                          )}
+                          {p.status === 'cancelled' && (
+                            <button
+                              className="btn outline small"
+                              type="button"
+                              disabled={updatingPurchaseId === p.id}
+                              onClick={() => handleUpdatePurchaseStatus(p.id, 'confirmed')}
+                            >
+                              Re-confirm
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // --- Render Authenticated Dashboard ---
   const renderDashboard = () => {
     const tabs = [
       { key: 'overview', label: 'Overview' },
       { key: 'products', label: 'Products' },
+      { key: 'orders', label: 'Orders' },
       { key: 'reports', label: 'Reports' },
     ];
 
@@ -831,6 +1071,7 @@ export default function AdminPage() {
           {/* Tab Content */}
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'products' && renderProducts()}
+          {activeTab === 'orders' && renderOrders()}
           {activeTab === 'reports' && renderReports()}
         </section>
 

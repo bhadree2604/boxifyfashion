@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useCart } from '../../cart-provider';
 import Image from 'next/image';
-import GatedLink from '../../gated-link';
+import OrderButton from '../../order-button';
 
 const whatsappNumber = '9817197390';
 const email = 'info@boxifyfashion.com';
@@ -69,24 +69,26 @@ export default function CartPage() {
             )}
           </div>
           <div className="cta-row">
-            <GatedLink
+            <OrderButton
               id="cart-wa-checkout-btn"
               className="btn solid"
               href={waLink}
+              items={cart}
               target="_blank"
               rel="noreferrer"
-              aria-disabled={cart.length === 0}
+              disabled={cart.length === 0}
             >
               Share on WhatsApp
-            </GatedLink>
-            <GatedLink
+            </OrderButton>
+            <OrderButton
               id="cart-email-checkout-btn"
               className="btn ghost"
               href={mailLink}
-              aria-disabled={cart.length === 0}
+              items={cart}
+              disabled={cart.length === 0}
             >
               Email cart
-            </GatedLink>
+            </OrderButton>
             <button
               id="cart-clear-btn"
               className="btn outline"
@@ -191,10 +193,12 @@ export default function CartPage() {
               </div>
               <p className="muted summary-note">Prices subject to final confirmation. MOQ 10 units per style.</p>
               <div className="cta-row" style={{ marginTop: '1rem' }}>
-                <a className="btn solid" href={waLink} target="_blank" rel="noreferrer">
+                <OrderButton className="btn solid" href={waLink} items={cart} target="_blank" rel="noreferrer">
                   Checkout on WhatsApp
-                </a>
-                <a className="btn ghost" href={mailLink}>Email this order</a>
+                </OrderButton>
+                <OrderButton className="btn ghost" href={mailLink} items={cart}>
+                  Email this order
+                </OrderButton>
               </div>
             </div>
           </>

@@ -1,16 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { auth, isAdminEmail } from '@/lib/firebase';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured, googleProvider } from '@/lib/firebase';
 import { logLoginEvent } from '@/lib/analytics';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 
-export default function SignInPage() {
+function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -18,6 +18,8 @@ export default function SignInPage() {
   const [googleError, setGoogleError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,7 +31,7 @@ export default function SignInPage() {
       if (isAdminEmail(email)) {
         router.push('/admin');
       } else {
-        router.push('/');
+        router.push(redirectTo);
       }
     } catch (err) {
       console.error(err);
@@ -73,7 +75,7 @@ export default function SignInPage() {
       }
       logLoginEvent(user.email, 'customer');
       // Let customer-auth-provider handle redirect to /complete-profile if needed
-      router.push('/');
+      router.push(redirectTo);
     } catch (err) {
       console.error('Google sign-in failed:', err);
       if (err.code === 'auth/popup-closed-by-user') {
@@ -209,5 +211,13 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense>
+      <SignInForm />
+    </Suspense>
   );
 }

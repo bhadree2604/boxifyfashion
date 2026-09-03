@@ -1,7 +1,7 @@
 'use client';
 
 import { useCustomerAuth } from './customer-auth-provider';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useCallback } from 'react';
 
 export default function GatedLink({
@@ -14,16 +14,18 @@ export default function GatedLink({
 }) {
   const { customer } = useCustomerAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleClick = useCallback(
     (e) => {
       if (!customer) {
         e.preventDefault();
-        router.push('/signin');
+        const redirect = pathname || '/products';
+        router.push(`/signin?redirect=${encodeURIComponent(redirect)}`);
       }
       // else let default navigation happen
     },
-    [customer, router]
+    [customer, router, pathname]
   );
 
   return (
